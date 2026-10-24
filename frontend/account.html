@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Change password - Bottled Water Costing</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="js/config.js"></script><script src="js/auth.js"></script>
+<script>requireAuth(false, true);</script>
+</head><body>
+<main class="authbox"><section class="panel">
+  <div id="userbar" class="userbar"></div>
+  <h1>Change password</h1>
+  <p id="force" class="note" style="display:none">An administrator reset your password. Choose a new one to continue.</p>
+  <p id="msg" class="note" role="status"></p>
+  <label>Current (or temporary) password <input id="cur" type="password" autocomplete="current-password"></label>
+  <label>New password (at least 8 characters) <input id="neu" type="password" autocomplete="new-password"></label>
+  <div class="actions"><button id="go">Save password</button><a href="index.html" id="back">Back</a></div>
+</section></main>
+<script>
+const $ = id => document.getElementById(id);
+const forced = new URLSearchParams(location.search).has("force");
+if (forced) { $("force").style.display = "block"; $("back").style.display = "none"; }
+$("go").onclick = async () => {
+  $("go").disabled = true;
+  try {
+    const r = await api("/api/change-password", { method: "POST", body: { currentPassword: $("cur").value, newPassword: $("neu").value } });
+    setToken(r.token); $("msg").textContent = "Password changed.";
+    setTimeout(() => location.replace("index.html"), 800);
+  } catch (e) { $("msg").textContent = e.message; }
+  finally { $("go").disabled = false; }
+};
+</script></body></html>

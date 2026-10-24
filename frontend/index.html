@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bottled Water Production Costing</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="js/config.js"></script><script src="js/auth.js"></script>
+<script>requireAuth(false);</script>
+</head>
+<body>
+<header>
+  <div id="userbar" class="userbar"></div>
+  <h1>Bottled water production costing</h1>
+  <p>Enter the batch quantities. The budget cost updates as you type.</p>
+</header>
+<main>
+  <section class="panel">
+    <h2>Batch</h2>
+    <label>Batch name <input id="batchName" type="text" placeholder="e.g. Batch D"></label>
+    <label>Date <input id="batchDate" type="date"></label>
+    <label>500 mL bottles <input id="q500" type="number" min="0" step="1" value="0"></label>
+    <label>20 L new bottles <input id="q20n" type="number" min="0" step="1" value="0"></label>
+    <label>20 L refills <input id="q20r" type="number" min="0" step="1" value="0"></label>
+    <label>10 L new bottles <input id="q10n" type="number" min="0" step="1" value="0"></label>
+    <label>10 L refills <input id="q10r" type="number" min="0" step="1" value="0"></label>
+    <label>5 L new bottles <input id="q5n" type="number" min="0" step="1" value="0"></label>
+    <label>5 L refills <input id="q5r" type="number" min="0" step="1" value="0"></label>
+    <label>Labour units <input id="labour" type="number" min="0" step="1" value="1"></label>
+    <p class="note">Refills are not charged VAT. VAT is not included in the cost totals.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Budget cost</h2>
+    <p id="warn" class="warn"></p>
+    <div class="scroll"><table id="result">
+      <thead><tr><th>Item</th><th class="n">Qty</th><th class="n">Rate (KSh)</th><th class="n">Cost (KSh)</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="packs" id="packs"></p>
+    <div class="actions"><button id="save">Save batch</button><button id="print" class="ghost">Print</button></div>
+  </section>
+
+  <section class="panel" id="salesPanel">
+    <h2>Selling prices and VAT</h2>
+    <label>500 mL price per pack of 24 (KSh) <input type="number" min="0" step="0.01" data-price="pack500" value="0"></label>
+    <label>20 L new bottle price (KSh) <input type="number" min="0" step="0.01" data-price="new20" value="0"></label>
+    <label>20 L refill price (KSh) <input type="number" min="0" step="0.01" data-price="ref20" value="0"></label>
+    <label>10 L new bottle price (KSh) <input type="number" min="0" step="0.01" data-price="new10" value="0"></label>
+    <label>10 L refill price (KSh) <input type="number" min="0" step="0.01" data-price="ref10" value="0"></label>
+    <label>5 L new bottle price (KSh) <input type="number" min="0" step="0.01" data-price="new5" value="0"></label>
+    <label>5 L refill price (KSh) <input type="number" min="0" step="0.01" data-price="ref5" value="0"></label>
+    <label>VAT rate (%) <input type="number" min="0" step="0.01" data-price="vat" value="16"></label>
+    <label>Prices entered are
+      <select data-price="inclusive"><option value="0">Excluding VAT</option><option value="1">Including VAT</option></select>
+    </label>
+    <div class="scroll"><table id="sales">
+      <thead><tr><th>Sales line</th><th class="n">Net (KSh)</th><th class="n">VAT (KSh)</th><th class="n">Gross (KSh)</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="note">Profit is net sales (excluding VAT) minus total budget cost. Refills carry no VAT.</p>
+  </section>
+
+  <section class="panel" id="signPanel">
+    <h2>Sign-off</h2>
+    <div id="sign"></div>
+    <p class="note">Use only the wording your organisation authorises.</p>
+  </section>
+
+  <section class="panel" id="ratesPanel">
+    <h2>Rates</h2>
+    <div class="rates" id="rates"></div>
+    <button id="resetRates" class="ghost">Reset to default rates</button>
+  </section>
+
+  <section class="panel wide">
+    <h2>Saved batches</h2>
+    <div class="scroll"><table id="saved">
+      <thead><tr><th>Batch</th><th>Date</th><th>Mix</th><th class="n">Labour</th><th class="n">Direct (KSh)</th><th class="n">5% (KSh)</th><th class="n">Cost (KSh)</th><th class="n">Net sales (KSh)</th><th class="n">Profit (KSh)</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="empty" id="empty">No saved batches yet. Fill in a batch and choose Save batch.</p>
+    <div class="actions"><button id="csv" class="ghost">Download CSV</button></div>
+  </section>
+</main>
+<script src="js/app.js"></script>
+</body>
+</html>

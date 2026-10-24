@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in - Bottled Water Costing</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="js/config.js"></script><script src="js/auth.js"></script>
+</head><body>
+<main class="authbox"><section class="panel">
+  <h1>Bottled water costing</h1>
+  <div class="actions"><button id="tabIn">Sign in</button><button id="tabUp" class="ghost">Create account</button></div>
+  <p id="msg" class="note" role="status"></p>
+  <label id="idRow">Email or username <input id="identifier" type="text" autocomplete="username"></label>
+  <label id="emailRow" style="display:none">Email <input id="email" type="email" autocomplete="email"></label>
+  <label id="userRow" style="display:none">Username <input id="username" type="text" autocomplete="off"></label>
+  <label>Password <input id="password" type="password" autocomplete="current-password"></label>
+  <button id="go">Sign in</button>
+  <p class="note">New accounts must be approved by an administrator. The first request after a quiet period can take up to a minute while the server wakes up.</p>
+</section></main>
+<script>
+let mode = "in";
+const $ = id => document.getElementById(id), say = t => $("msg").textContent = t;
+function setMode(m) {
+  mode = m;
+  $("idRow").style.display = m === "in" ? "block" : "none";
+  $("emailRow").style.display = $("userRow").style.display = m === "up" ? "block" : "none";
+  $("go").textContent = m === "up" ? "Create account" : "Sign in";
+  $("tabIn").className = m === "in" ? "" : "ghost"; $("tabUp").className = m === "up" ? "" : "ghost";
+  $("password").autocomplete = m === "up" ? "new-password" : "current-password";
+  say("");
+}
+$("tabIn").onclick = () => setMode("in"); $("tabUp").onclick = () => setMode("up");
+getMe().then(me => { if (me && !me.mustChangePassword) location.replace("index.html"); });
+
+$("go").onclick = async () => {
+  const password = $("password").value;
+  $("go").disabled = true; say("Please wait...");
+  try {
+    if (mode === "up") {
+      const r = await api("/api/register", { method: "POST", body: { email: $("email").value, username: $("username").value, password } });
+      setMode("in"); $("password").value = ""; say(r.message);
+    } else {
+      const r = await api("/api/login", { method: "POST", body: { identifier: $("identifier").value, password } });
+      setToken(r.token);
+      location.replace(r.user.mustChangePassword ? "account.html?force=1" : "index.html");
+    }
+  } catch (e) { say(e.message); }
+  finally { $("go").disabled = false; }
+};
+</script></body></html>

@@ -1,13 +1,30 @@
 # Bottled Water Production Costing
 
-Static web app (HTML/CSS/JS, no build step). Rates and saved batches are stored in the browser (localStorage).
-
-## Run locally
-Open `index.html` in a browser, or in VS Code use the Live Server extension.
+```
+water-costing/
+├── frontend/              -> deployed on Vercel (Root Directory = frontend)
+│   ├── index.html         costing app
+│   ├── login.html         sign in / create account
+│   ├── account.html       change password
+│   ├── admin.html         admin dashboard
+│   ├── vercel.json
+│   ├── css/style.css
+│   └── js/  app.js  auth.js  config.js   (config.js holds the Render API address)
+├── backend/               -> deployed on Render (Root Directory = backend)
+│   ├── server.js
+│   ├── package.json
+│   └── .env.example       (copy to .env for local use; never commit .env)
+├── .gitignore
+└── README.md
+```
 
 ## Deploy
-1. `git init && git add . && git commit -m "Initial commit"`
-2. Create an empty repo on GitHub, then:
-   `git remote add origin <repo-url> && git branch -M main && git push -u origin main`
-3. On vercel.com choose Add New > Project, import the repo, leave all settings default, and Deploy.
-Every later `git push` redeploys automatically.
+1. Atlas: create M0 cluster, database user, allow 0.0.0.0/0, copy the connection string (add /watercosting).
+2. Render: New Web Service > repo > Root Directory `backend` > Build `npm install` > Start `npm start`.
+   Environment: MONGODB_URI, JWT_SECRET, FRONTEND_URL (Vercel address, no trailing slash), ADMIN_EMAIL, ADMIN_USERNAME, ADMIN_PASSWORD.
+3. Put the Render address in `frontend/js/config.js`.
+4. Vercel: Project Settings > General > Root Directory = `frontend`.
+5. `git add . && git commit -m "message" && git push` redeploys both.
+
+## Rates
+10 L and 5 L rates start at 0. Enter the real prices in the Rates panel of the app.

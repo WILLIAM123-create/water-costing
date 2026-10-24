@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin dashboard - Bottled Water Costing</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="js/config.js"></script><script src="js/auth.js"></script>
+</head><body>
+<header><div id="userbar" class="userbar"></div><h1>Admin dashboard</h1><p><a href="index.html">Back to costing</a></p></header>
+<main><section class="panel wide">
+  <div id="banner" class="banner" style="display:none"></div>
+  <p id="msg" class="note" role="status"></p>
+  <div class="scroll"><table id="users"><thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
+</section></main>
+<script>
+let me;
+const msg = t => document.getElementById("msg").textContent = t;
+const banner = t => { const b = document.getElementById("banner"); b.textContent = t; b.style.display = t ? "block" : "none"; };
+
+async function act(fn) { try { msg(""); await fn(); } catch (e) { msg(e.message); } load(); }
+
+async function load() {
+  let users;
+  try { users = (await api("/api/admin/users")).users; } catch (e) { return msg(e.message); }
+  const tb = document.querySelector("#users tbody"); tb.textContent = "";
+  users.forEach(u => {
+    const tr = tb.insertRow();
+    [u.username, u.email, u.role, u.approved ? "Approved" : "Pending approval", new Date(u.createdAt).toLocaleDateString()]
+      .forEach(t => tr.insertCell().textContent = t);
+    const c = tr.insertCell(); c.className = "cellbtns";
+    const btn = (label, fn) => { const b = document.createElement("button"); b.className = "ghost"; b.textContent = label; b.onclick = () => act(fn); c.append(b); };
+    const isMe = u.id === me.id;
+    if (!isMe) {
+      btn(u.approved ? "Revoke" : "Approve", () => api("/api/admin/users/" + u.id, { method: "PATCH", body: { approved: !u.approved } }));
+      btn(u.role === "admin" ? "Remove admin" : "Make admin", () => api("/api/admin/users/" + u.id, { method: "PATCH", body: { role: u.role === "admin" ? "user" : "admin" } }));
+    }
+    btn("Reset password", async () => {
+      if (!confirm("Generate a temporary password for " + u.username + "?")) return;
+      const r = await api("/api/admin/users/" + u.id + "/password", { method: "POST", body: {} });
+      banner("Temporary password for " + u.username + ": " + r.tempPassword + "  (shown once. Share it privately; they must change it at next sign-in.)");
+    });
+    btn("Set password", async () => {
+      const p = prompt("New password for " + u.username + " (at least 8 characters):");
+      if (!p) return;
+      await api("/api/admin/users/" + u.id + "/password", { method: "POST", body: { newPassword: p } });
+      banner("Password set for " + u.username + ". They must change it at next sign-in.");
+    });
+    if (!isMe) btn("Delete", async () => { if (confirm("Delete " + u.username + " permanently?")) await api("/api/admin/users/" + u.id, { method: "DELETE" }); });
+  });
+}
+requireAuth(true).then(p => { if (p) { me = p; load(); } });
+</script></body></html>
