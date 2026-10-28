@@ -30,9 +30,10 @@ const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } ca
 const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
 const esc = s => String(s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-let rates = { ...DEFAULT_RATES, ...load("wc_rates", {}) };
-let prices = { ...DEFAULT_PRICES, ...load("wc_prices", {}) };
-let saved = load("wc_saved", []);
+let rates = { ...DEFAULT_RATES };
+let prices = { ...DEFAULT_PRICES };
+let saved = [];
+let isAdmin = false, me = null, settingsTimer = null;
 const sign = load("wc_sign", {});
 let current = null;
 
@@ -100,15 +101,41 @@ function mixText(b) {
 }
 function renderSaved() {
   $("empty").style.display = saved.length ? "none" : "block";
-  $("saved").querySelector("tbody").innerHTML = saved.map((b, i) =>
-    `<tr><td>${esc(b.name)}</td><td>${b.date || ""}</td><td>${mixText(b)}</td><td class="n">${b.lab}</td>
+  $("saved").querySelector("tbody").innerHTML = saved.map(b => {
+    const can = isAdmin || (me && b.owner === me.id);
+    return `<tr><td>${esc(b.name)}</td><td>${esc(b.date)}</td><td>${esc(b.by)}</td><td>${mixText(b)}</td><td class="n">${b.lab}</td>
      <td class="n">${fmt(b.direct)}</td><td class="n">${fmt(b.allowance)}</td><td class="n">${fmt(b.total)}</td>
      <td class="n">${b.sales ? fmt(b.sales.net) : "-"}</td><td class="n"><strong>${b.sales ? fmt(b.sales.profit) : "-"}</strong></td>
-     <td><button class="link" data-del="${i}">Delete</button></td></tr>`).join("");
+     <td>${can ? `<button class="link" data-del="${esc(b.id)}">Delete</button>` : ""}</td></tr>`;
+  }).join("");
+}
+async function loadBatches() {
+  try {
+    const { batches } = await api("/api/batches");
+    saved = batches.map(b => ({ id: b.id, name: b.name, date: b.date, by: b.createdByName, owner: b.createdBy, ...b.data }));
+  } catch (e) { $("empty").textContent = e.message; }
+  renderSaved();
+}
+function applyPrices() {
+  document.querySelectorAll("[data-price]").forEach(el => { el.value = prices[el.dataset.price]; el.disabled = !isAdmin; });
+}
+function queueSettings() {
+  if (!isAdmin) return;
+  clearTimeout(settingsTimer); $("settingsMsg").textContent = "Saving...";
+  settingsTimer = setTimeout(async () => {
+    try { await api("/api/settings", { method: "PUT", body: { rates, prices } }); $("settingsMsg").textContent = "Saved. Everyone now uses these rates and prices."; }
+    catch (e) { $("settingsMsg").textContent = "Not saved: " + e.message; }
+  }, 600);
+}
+function checkImport() {
+  const old = load("wc_saved", []);
+  if (!old.length) return;
+  $("importBox").style.display = "block";
+  $("importText").textContent = `${old.length} batch(es) are saved only in this browser.`;
 }
 function renderRates() {
   $("rates").innerHTML = Object.keys(DEFAULT_RATES).map(k =>
-    `<label>${RATE_LABELS[k]} <input type="number" min="0" step="0.01" data-rate="${k}" value="${rates[k]}"></label>`).join("");
+    `<label>${RATE_LABELS[k]} <input type="number" min="0" step="0.01" data-rate="${k}" value="${rates[k]}" ${isAdmin ? "" : "disabled"}></label>`).join("");
 }
 function renderSign() {
   $("sign").innerHTML = ROLES.map(r => {
@@ -126,25 +153,40 @@ function readSign() {
 
 document.addEventListener("input", e => {
   const t = e.target;
-  if (t.dataset.rate) { rates[t.dataset.rate] = +t.value || 0; store("wc_rates", rates); }
-  if (t.dataset.price) { prices[t.dataset.price] = +t.value || 0; store("wc_prices", prices); }
+  if (t.dataset.rate && isAdmin) { rates[t.dataset.rate] = +t.value || 0; queueSettings(); }
+  if (t.dataset.price && isAdmin) { prices[t.dataset.price] = +t.value || 0; queueSettings(); }
   if (t.dataset.sign) { const [k, f] = t.dataset.sign.split("."); sign[k] = { ...(sign[k] || {}), [f]: t.value }; store("wc_sign", sign); }
   renderResult();
 });
-document.addEventListener("click", e => {
+document.addEventListener("click", async e => {
   const d = e.target.dataset.del;
-  if (d !== undefined && confirm("Delete this saved batch?")) { saved.splice(+d, 1); store("wc_saved", saved); renderSaved(); }
+  if (d && confirm("Delete this saved batch?")) {
+    try { await api("/api/batches/" + d, { method: "DELETE" }); } catch (err) { alert(err.message); }
+    await loadBatches();
+  }
 });
-$("save").onclick = () => {
-  saved.push({ name: $("batchName").value || "Untitled batch", date: $("batchDate").value, ...current, rates: { ...rates }, prices: { ...prices }, sign: readSign() });
-  store("wc_saved", saved); renderSaved();
+$("save").onclick = async () => {
+  const c = current, data = { q500: c.q500, lab: c.lab, direct: c.direct, allowance: c.allowance, total: c.total,
+    sales: { net: c.sales.net, vat: c.sales.vat, gross: c.sales.gross, profit: c.sales.profit, margin: c.sales.margin },
+    rates: { ...rates }, prices: { ...prices }, sign: readSign() };
+  SIZES.forEach(s => { data[s.nq] = c[s.nq]; data[s.rq] = c[s.rq]; });
+  $("save").disabled = true;
+  try { await api("/api/batches", { method: "POST", body: { name: $("batchName").value || "Untitled batch", date: $("batchDate").value, data } }); await loadBatches(); }
+  catch (e) { alert(e.message); }
+  finally { $("save").disabled = false; }
+};
+$("importBtn").onclick = async () => {
+  try {
+    for (const b of load("wc_saved", [])) await api("/api/batches", { method: "POST", body: { name: b.name, date: b.date, data: b } });
+    store("wc_saved", []); $("importBox").style.display = "none"; await loadBatches();
+  } catch (e) { alert(e.message); }
 };
 $("print").onclick = () => window.print();
-$("resetRates").onclick = () => { rates = { ...DEFAULT_RATES }; store("wc_rates", rates); renderRates(); renderResult(); };
+$("resetRates").onclick = () => { rates = { ...DEFAULT_RATES }; renderRates(); renderResult(); queueSettings(); };
 $("csv").onclick = () => {
   const q = s => `"${String(s || "").replace(/"/g, '""')}"`;
-  const head = ["Batch", "Date", "500mL", ...SIZES.flatMap(s => [s.label + " new", s.label + " refill"]), "Labour units", "Direct", "Allowance", "Total cost", "Net sales", "VAT", "Profit", "SH", "DCD", "CD"].join(",");
-  const rows = saved.map(b => [q(b.name), b.date, b.q500, ...SIZES.flatMap(s => [b[s.nq] || 0, b[s.rq] || 0]), b.lab, b.direct, b.allowance, b.total,
+  const head = ["Batch", "Date", "Saved by", "500mL", ...SIZES.flatMap(s => [s.label + " new", s.label + " refill"]), "Labour units", "Direct", "Allowance", "Total cost", "Net sales", "VAT", "Profit", "SH", "DCD", "CD"].join(",");
+  const rows = saved.map(b => [q(b.name), b.date, q(b.by), b.q500, ...SIZES.flatMap(s => [b[s.nq] || 0, b[s.rq] || 0]), b.lab, b.direct, b.allowance, b.total,
     b.sales ? b.sales.net : "", b.sales ? b.sales.vat : "", b.sales ? b.sales.profit : "", ...["sh", "dcd", "cd"].map(k => q(b.sign && b.sign[k] && b.sign[k].name))].join(","));
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([[head, ...rows].join("\n")], { type: "text/csv" }));
@@ -152,5 +194,15 @@ $("csv").onclick = () => {
 };
 
 $("batchDate").valueAsDate = new Date();
-document.querySelectorAll("[data-price]").forEach(el => { el.value = prices[el.dataset.price]; });
-renderRates(); renderSign(); renderResult(); renderSaved();
+applyPrices(); renderRates(); renderSign(); renderResult(); renderSaved();
+window.meReady.then(async u => {
+  if (!u) return;
+  me = u; isAdmin = u.role === "admin";
+  $("resetRates").style.display = isAdmin ? "" : "none";
+  try {
+    const s = (await api("/api/settings")).settings;
+    if (s) { rates = { ...DEFAULT_RATES, ...s.rates }; prices = { ...DEFAULT_PRICES, ...s.prices }; }
+  } catch (e) { $("settingsMsg").textContent = e.message; }
+  applyPrices(); renderRates(); renderResult();
+  await loadBatches(); checkImport();
+});

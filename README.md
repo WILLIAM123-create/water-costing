@@ -26,5 +26,5 @@ water-costing/
 4. Vercel: Project Settings > General > Root Directory = `frontend`.
 5. `git add . && git commit -m "message" && git push` redeploys both.
 
-## Rates
-10 L and 5 L rates start at 0. Enter the real prices in the Rates panel of the app.
+## Shared data
+Batches, rates and selling prices are stored in MongoDB and shared by all approved users. Only admins change rates and prices. Enter the real 10 L and 5 L rates once in the Rates panel (admin).

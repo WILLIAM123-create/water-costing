@@ -6,7 +6,7 @@
 <title>Bottled Water Production Costing</title>
 <link rel="stylesheet" href="css/style.css">
 <script src="js/config.js"></script><script src="js/auth.js"></script>
-<script>requireAuth(false);</script>
+<script>window.meReady = requireAuth(false);</script>
 </head>
 <body>
 <header>
@@ -71,12 +71,14 @@
     <h2>Rates</h2>
     <div class="rates" id="rates"></div>
     <button id="resetRates" class="ghost">Reset to default rates</button>
+    <p id="settingsMsg" class="note">Rates and selling prices are shared by everyone. Only an administrator can change them.</p>
   </section>
 
   <section class="panel wide">
     <h2>Saved batches</h2>
+    <div id="importBox" class="banner" style="display:none"><span id="importText"></span> <button id="importBtn">Upload to shared records</button></div>
     <div class="scroll"><table id="saved">
-      <thead><tr><th>Batch</th><th>Date</th><th>Mix</th><th class="n">Labour</th><th class="n">Direct (KSh)</th><th class="n">5% (KSh)</th><th class="n">Cost (KSh)</th><th class="n">Net sales (KSh)</th><th class="n">Profit (KSh)</th><th></th></tr></thead>
+      <thead><tr><th>Batch</th><th>Date</th><th>Saved by</th><th>Mix</th><th class="n">Labour</th><th class="n">Direct (KSh)</th><th class="n">5% (KSh)</th><th class="n">Cost (KSh)</th><th class="n">Net sales (KSh)</th><th class="n">Profit (KSh)</th><th></th></tr></thead>
       <tbody></tbody>
     </table></div>
     <p class="empty" id="empty">No saved batches yet. Fill in a batch and choose Save batch.</p>
