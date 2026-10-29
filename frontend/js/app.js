@@ -182,6 +182,10 @@ $("importBtn").onclick = async () => {
   } catch (e) { alert(e.message); }
 };
 $("print").onclick = () => window.print();
+window.addEventListener("beforeprint", () => {
+  $("phName").textContent = $("batchName").value || "(unnamed)"; $("phDate").textContent = $("batchDate").value;
+  $("phBy").textContent = me ? me.username : ""; $("phWhen").textContent = new Date().toLocaleString("en-KE");
+});
 $("resetRates").onclick = () => { rates = { ...DEFAULT_RATES }; renderRates(); renderResult(); queueSettings(); };
 $("csv").onclick = () => {
   const q = s => `"${String(s || "").replace(/"/g, '""')}"`;

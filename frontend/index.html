@@ -5,15 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bottled Water Production Costing</title>
 <link rel="stylesheet" href="css/style.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#0b6e8a">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <script src="js/config.js"></script><script src="js/auth.js"></script>
 <script>window.meReady = requireAuth(false);</script>
 </head>
 <body>
 <header>
   <div id="userbar" class="userbar"></div>
-  <h1>Bottled water production costing</h1>
-  <p>Enter the batch quantities. The budget cost updates as you type.</p>
+  <div class="brand">
+    <img class="logo-sm" src="/img/emblem.jpg" alt="KALRO">
+    <div><h1>Bottled water production costing</h1><p>Enter the batch quantities. The budget cost updates as you type.</p></div>
+  </div>
 </header>
+<div class="printonly" id="printHead">
+  <img src="/img/logo.jpg" alt="KALRO Pure Natural Water">
+  <div>
+    <h2>Batch costing sheet</h2>
+    <p><strong>Batch:</strong> <span id="phName"></span> &nbsp; <strong>Date:</strong> <span id="phDate"></span></p>
+    <p><strong>Prepared by:</strong> <span id="phBy"></span> &nbsp; <strong>Printed:</strong> <span id="phWhen"></span></p>
+  </div>
+</div>
 <main>
   <section class="panel">
     <h2>Batch</h2>
